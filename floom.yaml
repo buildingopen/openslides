@@ -1,0 +1,104 @@
+name: openslides
+version: 1
+runtime: python3.11
+
+endpoints:
+  POST /generate:
+    summary: Generate a branded pitch deck
+    description: >
+      Generate a professional pitch deck from a prompt and optional company URL.
+      Scrapes brand colors, fonts, and logo from the URL. Returns HTML slides and PDF.
+    inputs:
+      type: object
+      required: [prompt]
+      properties:
+        prompt:
+          type: string
+          description: What the deck is about (e.g. "Raising $200K pre-seed for AI deploy platform")
+        company_url:
+          type: string
+          description: Company website to scrape brand from (e.g. "https://floom.dev")
+        design_system_url:
+          type: string
+          description: Explicit design system JSON URL
+        recipient:
+          type: string
+          description: Name for title slide personalization
+        deck_type:
+          type: string
+          enum: [pitch, sales, update, general]
+          default: pitch
+        audience:
+          type: string
+          enum: [vc, angel, ff, customer]
+          default: vc
+        format:
+          type: string
+          enum: [html, pdf, all]
+          default: all
+    outputs:
+      type: object
+      properties:
+        deck_id:
+          type: string
+        slide_count:
+          type: integer
+        pdf_url:
+          type: string
+        slides:
+          type: array
+          items:
+            type: string
+
+  POST /iterate:
+    summary: Regenerate specific slides
+    description: Regenerate specific slides from a previous deck while keeping the rest.
+    inputs:
+      type: object
+      required: [deck_id, prompt, slide_indices]
+      properties:
+        deck_id:
+          type: string
+          description: Previous deck ID to iterate on
+        prompt:
+          type: string
+          description: Refinement instruction
+        slide_indices:
+          type: array
+          items:
+            type: integer
+          description: 0-based indices of slides to regenerate
+    outputs:
+      type: object
+      properties:
+        deck_id:
+          type: string
+        slide_count:
+          type: integer
+
+  POST /resolve_logo:
+    summary: Resolve a company logo
+    description: Find the best logo for a company name or domain.
+    inputs:
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+          description: Company name or domain
+    outputs:
+      type: object
+      properties:
+        url:
+          type: string
+        format:
+          type: string
+        provider:
+          type: string
+
+secrets:
+  GEMINI_API_KEY:
+    description: Google Gemini API key (content generation + visual auditing)
+    required: true
+
+network: true
