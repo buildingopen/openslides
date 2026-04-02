@@ -85,13 +85,13 @@ def generate_deck(
     # --- Step 1: Brand context ---
     brand = BrandContext()
     if company_url:
-        print(f"Scraping brand from {company_url}...")
+        print(f"Scraping brand from {company_url}...", file=sys.stderr)
         brand = scrape_brand(company_url)
 
     # --- Step 2: Theme ---
     theme = LightTheme()
     if design_system_url:
-        print(f"Loading design system from {design_system_url}...")
+        print(f"Loading design system from {design_system_url}...", file=sys.stderr)
         theme = Theme.from_url(design_system_url)
     elif brand.colors or brand.fonts:
         theme = Theme.from_brand(brand)
@@ -100,7 +100,7 @@ def generate_deck(
     gen = DeckGenerator(api_key=api_key)
 
     if slides_to_regenerate and previous_deck_id:
-        print(f"Iterating on deck {previous_deck_id}, regenerating slides {slides_to_regenerate}...")
+        print(f"Iterating on deck {previous_deck_id}, regenerating slides {slides_to_regenerate}...", file=sys.stderr)
         prev_config = load_deck(previous_deck_id)
         config = gen.generate_partial(
             prompt=prompt,
@@ -110,7 +110,7 @@ def generate_deck(
             audience=audience,
         )
     else:
-        print(f"Generating {deck_type} deck for audience: {audience}...")
+        print(f"Generating {deck_type} deck for audience: {audience}...", file=sys.stderr)
         config = gen.generate(
             prompt=prompt,
             brand=brand,
@@ -129,7 +129,7 @@ def generate_deck(
                     content["bottom_items"].append(f"For {recipient}")
 
     # --- Step 5: Render HTML ---
-    print("Rendering slides...")
+    print("Rendering slides...", file=sys.stderr)
     html_slides = gen.render(config, theme=theme)
     result.html_slides = html_slides
 
@@ -145,18 +145,18 @@ def generate_deck(
     from dataclasses import asdict
     deck_id = save_deck(config)
     result.deck_id = deck_id
-    print(f"Saved as deck {deck_id}")
+    print(f"Saved as deck {deck_id}", file=sys.stderr)
 
     # --- Step 7: Export ---
     if format in ("pdf", "all"):
-        print("Exporting PDF...")
+        print("Exporting PDF...", file=sys.stderr)
         from .export import export_pdf_sync
         pdf_path = output_dir / "deck.pdf"
         export_pdf_sync(html_slides, pdf_path)
         result.pdf_path = str(pdf_path)
 
     if format in ("pptx", "all"):
-        print("Exporting PPTX...")
+        print("Exporting PPTX...", file=sys.stderr)
         from .export import export_pptx
         pptx_path = output_dir / "deck.pptx"
         export_pptx(html_slides, pptx_path)
@@ -164,7 +164,7 @@ def generate_deck(
 
     # --- Step 8: Audit ---
     if audit:
-        print("Running visual audit...")
+        print("Running visual audit...", file=sys.stderr)
         try:
             from .auditor import audit_slides
             result.audit = audit_slides(html_slides)
@@ -173,27 +173,27 @@ def generate_deck(
 
     # --- Step 9: Publish ---
     if publish:
-        print("Publishing to aired.sh...")
+        print("Publishing to aired.sh...", file=sys.stderr)
         from .publish import publish_to_aired
         company = brand.company_name or "Pitch Deck"
         url = publish_to_aired(html_slides, title=f"{company} - Pitch Deck")
         if url:
             result.aired_url = url
-            print(f"Published: {url}")
+            print(f"Published: {url}", file=sys.stderr)
         else:
             result.warnings.append("Publishing failed (is aired CLI installed?)")
 
     # --- Done ---
-    print(f"\nDeck generated: {len(html_slides)} slides")
+    print(f"\nDeck generated: {len(html_slides)} slides", file=sys.stderr)
     if result.pdf_path:
-        print(f"  PDF: {result.pdf_path}")
+        print(f"  PDF: {result.pdf_path}", file=sys.stderr)
     if result.pptx_path:
-        print(f"  PPTX: {result.pptx_path}")
+        print(f"  PPTX: {result.pptx_path}", file=sys.stderr)
     if result.aired_url:
-        print(f"  URL: {result.aired_url}")
+        print(f"  URL: {result.aired_url}", file=sys.stderr)
     if result.warnings:
         for w in result.warnings:
-            print(f"  Warning: {w}")
+            print(f"  Warning: {w}", file=sys.stderr)
 
     return result
 

@@ -9,6 +9,7 @@ Architecture:
 4. Python post-processes (theme injection, export)
 """
 from __future__ import annotations
+import sys
 
 import os
 from pathlib import Path
@@ -129,9 +130,9 @@ def render_deck(
             html = _extract_html(response.text or "")
             html = _inject_theme(html, theme)
             slides.append(html)
-            print(f"  Slide {i+1}/{len(outline)}: {slide_type} ({len(html)} chars)")
+            print(f"  Slide {i+1}/{len(outline)}: {slide_type} ({len(html)} chars)", file=sys.stderr)
         except Exception as e:
-            print(f"  Slide {i+1}/{len(outline)}: {slide_type} FAILED: {e}")
+            print(f"  Slide {i+1}/{len(outline)}: {slide_type} FAILED: {e}", file=sys.stderr)
             slides.append(_fallback_slide(slide_type, key_message, theme, company))
 
     return slides
