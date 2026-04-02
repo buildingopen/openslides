@@ -341,7 +341,10 @@ This is a CONSULTING deck, NOT a startup pitch deck. Key differences:
 10. For team slides: use text-based layouts (name, role, credentials, badges). Do NOT generate or reference avatar images, illustrations, or placeholder photos. Use initials in styled circles if you need a visual anchor.
 11. Every slide must use the full 1080px height. If content is short, increase padding, use larger fonts, or add supporting visual elements.
 12. Use inline SVG icons from Lucide (24x24 viewBox, stroke-based) for visual richness. Do not reference external icon CDNs.
-13. Return ONLY the HTML. No markdown fences. No commentary."""
+13. NEVER leave a table, grid, or section empty. Every visual element must have real content. If you create a table, fill EVERY row. An empty table is worse than no table.
+14. Every number/stat must have a label explaining what it measures. "92%" alone is meaningless. "92% Clinical Accuracy" is clear. Always pair value + context.
+15. Do NOT use overflow:hidden on the body. If content is too long, reduce font sizes or remove less important elements. Content must never be clipped.
+16. Return ONLY the HTML. No markdown fences. No commentary."""
 
 
 # =============================================================================
