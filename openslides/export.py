@@ -1,10 +1,12 @@
 """
 Export Engine
-HTML slides -> PDF, PNG, PPTX via Playwright.
+HTML slides -> PDF (Chrome headless), PNG (Playwright), PPTX.
 """
 from __future__ import annotations
 
 import asyncio
+import shutil
+import subprocess
 import tempfile
 from pathlib import Path
 
@@ -14,13 +16,153 @@ from PyPDF2.generic import (
 )
 
 
+# CSS injected into every slide before PDF rendering to fix Chrome headless
+# rendering artifacts: box-shadow renders as gray blocks, radial-gradient
+# on pseudo-elements renders as solid rectangles.
+_PRINT_FIX_CSS = """
+<style>
+@media print {
+  * { box-shadow: none !important; -webkit-box-shadow: none !important; }
+  *::before, *::after {
+    background-image: none !important;
+    box-shadow: none !important;
+  }
+}
+</style>
+"""
+
+
+def _find_chrome() -> str:
+    """Find Chrome binary on the system."""
+    for name in ("google-chrome-stable", "google-chrome", "chromium-browser", "chromium"):
+        path = shutil.which(name)
+        if path:
+            return path
+    raise FileNotFoundError(
+        "No Chrome/Chromium binary found. Install google-chrome-stable or chromium."
+    )
+
+
+def _inject_print_css(html: str) -> str:
+    """Inject @media print CSS fixes before </head> in slide HTML."""
+    if "</head>" in html:
+        return html.replace("</head>", _PRINT_FIX_CSS + "</head>", 1)
+    if "<body" in html:
+        return html.replace("<body", _PRINT_FIX_CSS + "<body", 1)
+    return _PRINT_FIX_CSS + html
+
+
+def _inject_page_size(html: str, width: int, height: int) -> str:
+    """Inject @page size rule if not already present."""
+    if "@page" in html:
+        return html
+    page_css = f"<style>@page {{ size: {width}px {height}px; margin: 0; }}</style>"
+    if "</head>" in html:
+        return html.replace("</head>", page_css + "</head>", 1)
+    return page_css + html
+
+
+def _render_slide_pdf(
+    chrome: str, html_path: Path, pdf_path: Path, timeout: int = 30
+) -> Path:
+    """Render a single HTML file to PDF using Chrome headless."""
+    cmd = [
+        chrome,
+        "--headless",
+        "--no-sandbox",
+        "--disable-gpu",
+        "--disable-software-rasterizer",
+        "--disable-dev-shm-usage",
+        "--font-render-hinting=none",
+        f"--print-to-pdf={pdf_path}",
+        "--print-to-pdf-no-header",
+        "--no-margins",
+        str(html_path),
+    ]
+    result = subprocess.run(
+        cmd, capture_output=True, text=True, timeout=timeout
+    )
+    if not pdf_path.exists():
+        raise RuntimeError(
+            f"Chrome headless PDF failed for {html_path}.\n"
+            f"stderr: {result.stderr}\nstdout: {result.stdout}"
+        )
+    return pdf_path
+
+
+def export_pdf_sync(
+    slides: list[str],
+    output_path: str | Path,
+    links: list[dict] | None = None,
+    width: int = 1920,
+    height: int = 1080,
+) -> Path:
+    """
+    Export slides as a single merged PDF using Chrome headless.
+
+    Each slide HTML is written to a temp file, rendered to PDF via
+    google-chrome --headless --print-to-pdf, then merged with PyPDF2.
+
+    Args:
+        slides: list of HTML strings (full documents)
+        output_path: destination PDF path
+        links: optional list of {"page": int, "x1", "y1", "x2", "y2", "url"}
+        width: slide width in pixels (default 1920)
+        height: slide height in pixels (default 1080)
+    """
+    output_path = Path(output_path).expanduser()
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+
+    chrome = _find_chrome()
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        tmpdir = Path(tmpdir)
+        pdf_paths = []
+
+        for i, html in enumerate(slides):
+            # Inject print fixes and page size
+            html = _inject_page_size(html, width, height)
+            html = _inject_print_css(html)
+
+            html_path = tmpdir / f"slide-{i:02d}.html"
+            html_path.write_text(html, encoding="utf-8")
+
+            pdf_path = tmpdir / f"slide-{i:02d}.pdf"
+            _render_slide_pdf(chrome, html_path, pdf_path)
+            pdf_paths.append(pdf_path)
+
+        # Merge all single-page PDFs
+        writer = PdfWriter()
+        for pdf_path in pdf_paths:
+            for pg in PdfReader(str(pdf_path)).pages:
+                writer.add_page(pg)
+
+        # Add link annotations
+        if links:
+            for link in links:
+                _add_pdf_link(
+                    writer,
+                    page_index=link["page"],
+                    x1=link["x1"],
+                    y1=link["y1"],
+                    x2=link["x2"],
+                    y2=link["y2"],
+                    url=link["url"],
+                )
+
+        with open(output_path, "wb") as f:
+            writer.write(f)
+
+    return output_path
+
+
 class ExportEngine:
     """
-    Export slides to PDF/PNG/PPTX.
+    Async export engine for PNG (uses Playwright).
+    PDF export uses Chrome headless directly (see export_pdf_sync).
 
     Usage:
         async with ExportEngine() as engine:
-            pdf = await engine.export_pdf(slides, "./deck.pdf")
             pngs = await engine.export_png(slides, "./pngs/")
     """
 
@@ -34,82 +176,12 @@ class ExportEngine:
         if self._browser is None:
             from playwright.async_api import async_playwright
             self._pw = await async_playwright().start()
-            import shutil
-            chrome_path = shutil.which("google-chrome-stable") or shutil.which("google-chrome") or shutil.which("chromium")
+            chrome_path = _find_chrome()
             launch_kwargs = {"headless": True}
             if chrome_path:
                 launch_kwargs["executable_path"] = chrome_path
             self._browser = await self._pw.chromium.launch(**launch_kwargs)
         return self._browser
-
-    async def export_pdf(
-        self,
-        slides: list[str],
-        output_path: str | Path,
-        links: list[dict] | None = None,
-    ) -> Path:
-        """
-        Export slides as a single merged PDF with proper text rendering.
-
-        Each slide is rendered to PDF via Playwright's page.pdf() (preserves text),
-        then merged with PyPDF2. Optionally adds clickable link annotations.
-
-        Args:
-            slides: list of HTML strings
-            output_path: destination PDF path
-            links: optional list of {"page": int, "x1", "y1", "x2", "y2", "url"}
-        """
-        output_path = Path(output_path).expanduser()
-        output_path.parent.mkdir(parents=True, exist_ok=True)
-
-        browser = await self._browser_instance()
-
-        with tempfile.TemporaryDirectory() as tmpdir:
-            pdf_paths = []
-            for i, html in enumerate(slides):
-                page = await browser.new_page(
-                    viewport={"width": self.width, "height": self.height}
-                )
-                await page.set_content(html, wait_until="networkidle")
-                # Wait for fonts
-                await page.evaluate("() => document.fonts.ready")
-                await page.evaluate('async () => { await document.fonts.load("400 48px \\"DM Serif Display\\"").catch(() => {}); }')
-
-                pdf_path = Path(tmpdir) / f"slide-{i:02d}.pdf"
-                await page.pdf(
-                    path=str(pdf_path),
-                    width=f"{self.width}px",
-                    height=f"{self.height}px",
-                    margin={"top": "0", "right": "0", "bottom": "0", "left": "0"},
-                    print_background=True,
-                    prefer_css_page_size=True,
-                )
-                await page.close()
-                pdf_paths.append(pdf_path)
-
-            # Merge PDFs
-            writer = PdfWriter()
-            for pdf_path in pdf_paths:
-                for pg in PdfReader(str(pdf_path)).pages:
-                    writer.add_page(pg)
-
-            # Add link annotations
-            if links:
-                for link in links:
-                    _add_pdf_link(
-                        writer,
-                        page_index=link["page"],
-                        x1=link["x1"],
-                        y1=link["y1"],
-                        x2=link["x2"],
-                        y2=link["y2"],
-                        url=link["url"],
-                    )
-
-            with open(output_path, "wb") as f:
-                writer.write(f)
-
-        return output_path
 
     async def export_png(
         self,
@@ -153,19 +225,9 @@ class ExportEngine:
         await self.close()
 
 
-def export_pdf_sync(slides: list[str], output_path: str | Path, links: list[dict] | None = None) -> Path:
-    """Synchronous PDF export."""
-    return asyncio.run(_async_export_pdf(slides, output_path, links))
-
-
 def export_png_sync(slides: list[str], output_dir: str | Path) -> list[Path]:
     """Synchronous PNG export."""
     return asyncio.run(_async_export_png(slides, output_dir))
-
-
-async def _async_export_pdf(slides, output_path, links):
-    async with ExportEngine() as engine:
-        return await engine.export_pdf(slides, output_path, links)
 
 
 async def _async_export_png(slides, output_dir):

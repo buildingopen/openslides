@@ -18,7 +18,7 @@ openslides/
   prompts.py          # System prompts for Claude, audience-aware
   logos.py            # Logo resolution: SimpleIcons -> Clearbit -> Google favicon
   images.py           # Product screenshots, team photos, color extraction
-  export.py           # PDF (Playwright), PPTX (python-pptx), PNG
+  export.py           # PDF (Chrome headless), PPTX (python-pptx), PNG (Playwright)
   scraper.py          # Brand extraction from company URL
   auditor.py          # Gemini visual scoring per slide
   publish.py          # aired.sh upload
@@ -29,7 +29,7 @@ openslides/
 
 - **Theme tokens**: components.py uses Theme dataclass values. `{theme.accent}`, `{theme.background}` etc.
 - **Logo chain**: SimpleIcons (SVG) > Clearbit (PNG) > Google favicon. Cache in ~/.openslides/logo_cache/
-- **PDF export**: Playwright page.pdf() (preserves text) + PyPDF2 merge + link annotations
+- **PDF export**: Chrome headless --print-to-pdf (subprocess) + @media print fixes for box-shadow + PyPDF2 merge + link annotations
 - **PPTX**: Render to PNG, embed in PowerPoint slides (visual fidelity over editability)
 - **Validation**: content_validator.py checks LLM output before rendering. Fields are in slide["content"], not slide root.
 - **Versioning**: Each deck gets a UUID, stored in ~/.openslides/decks/

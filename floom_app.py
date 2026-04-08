@@ -1,4 +1,7 @@
 """floom app wrapper for OpenSlides."""
+import base64
+from pathlib import Path
+
 from floom import app, context
 from openslides.main import generate_deck
 from openslides.logos import resolve_logo as _resolve_logo
@@ -14,7 +17,7 @@ def generate(
     recipient: str = None,
     deck_type: str = "pitch",
     audience: str = "vc",
-    format: str = "all",
+    format: str = "pdf",
 ) -> dict:
     """Generate a branded pitch deck from a prompt and optional company URL."""
     result = generate_deck(
@@ -27,12 +30,25 @@ def generate(
         format=format,
         api_key=context.get_secret("GEMINI_API_KEY"),
     )
-    return {
+
+    output = {
         "deck_id": result.deck_id,
         "slide_count": len(result.html_slides),
-        "pdf_url": result.pdf_path,
-        "slides": result.html_slides,
     }
+
+    # Return PDF as base64 when available
+    if result.pdf_path:
+        pdf_file = Path(result.pdf_path)
+        if pdf_file.exists():
+            pdf_bytes = pdf_file.read_bytes()
+            output["pdf_base64"] = base64.b64encode(pdf_bytes).decode("ascii")
+            output["pdf_size_bytes"] = len(pdf_bytes)
+
+    # Include HTML slides only when explicitly requested
+    if format in ("html", "all"):
+        output["slides"] = result.html_slides
+
+    return output
 
 
 @app.action
@@ -42,9 +58,23 @@ def iterate(deck_id: str, prompt: str, slide_indices: list[int]) -> dict:
         prompt=prompt,
         previous_deck_id=deck_id,
         slides_to_regenerate=slide_indices,
+        format="pdf",
         api_key=context.get_secret("GEMINI_API_KEY"),
     )
-    return {"deck_id": result.deck_id, "slide_count": len(result.html_slides)}
+
+    output = {
+        "deck_id": result.deck_id,
+        "slide_count": len(result.html_slides),
+    }
+
+    if result.pdf_path:
+        pdf_file = Path(result.pdf_path)
+        if pdf_file.exists():
+            pdf_bytes = pdf_file.read_bytes()
+            output["pdf_base64"] = base64.b64encode(pdf_bytes).decode("ascii")
+            output["pdf_size_bytes"] = len(pdf_bytes)
+
+    return output
 
 
 @app.action

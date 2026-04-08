@@ -7,7 +7,7 @@ endpoints:
     summary: Generate a branded pitch deck
     description: >
       Generate a professional pitch deck from a prompt and optional company URL.
-      Scrapes brand colors, fonts, and logo from the URL. Returns HTML slides and PDF.
+      Scrapes brand colors, fonts, and logo from the URL. Returns PDF (base64-encoded).
     inputs:
       type: object
       required: [prompt]
@@ -38,7 +38,7 @@ endpoints:
         format:
           type: string
           enum: [html, pdf, all]
-          default: all
+          default: pdf
     outputs:
       type: object
       properties:
@@ -46,16 +46,21 @@ endpoints:
           type: string
         slide_count:
           type: integer
-        pdf_url:
+        pdf_base64:
           type: string
+          description: Base64-encoded PDF file
+        pdf_size_bytes:
+          type: integer
+          description: PDF file size in bytes
         slides:
           type: array
           items:
             type: string
+          description: HTML slide strings (only when format is html or all)
 
   POST /iterate:
     summary: Regenerate specific slides
-    description: Regenerate specific slides from a previous deck while keeping the rest.
+    description: Regenerate specific slides from a previous deck while keeping the rest. Returns updated PDF.
     inputs:
       type: object
       required: [deck_id, prompt, slide_indices]
@@ -77,6 +82,11 @@ endpoints:
         deck_id:
           type: string
         slide_count:
+          type: integer
+        pdf_base64:
+          type: string
+          description: Base64-encoded PDF file
+        pdf_size_bytes:
           type: integer
 
   POST /resolve_logo:
