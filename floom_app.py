@@ -17,7 +17,6 @@ def generate(
     recipient: str = None,
     deck_type: str = "pitch",
     audience: str = "vc",
-    format: str = "pdf",
 ) -> dict:
     """Generate a branded pitch deck from a prompt and optional company URL."""
     result = generate_deck(
@@ -27,7 +26,6 @@ def generate(
         recipient=recipient,
         deck_type=deck_type,
         audience=audience,
-        format=format,
         api_key=context.get_secret("GEMINI_API_KEY"),
     )
 
@@ -44,10 +42,6 @@ def generate(
             output["pdf_base64"] = base64.b64encode(pdf_bytes).decode("ascii")
             output["pdf_size_bytes"] = len(pdf_bytes)
 
-    # Include HTML slides only when explicitly requested
-    if format in ("html", "all"):
-        output["slides"] = result.html_slides
-
     return output
 
 
@@ -58,7 +52,6 @@ def iterate(deck_id: str, prompt: str, slide_indices: list[int]) -> dict:
         prompt=prompt,
         previous_deck_id=deck_id,
         slides_to_regenerate=slide_indices,
-        format="pdf",
         api_key=context.get_secret("GEMINI_API_KEY"),
     )
 
