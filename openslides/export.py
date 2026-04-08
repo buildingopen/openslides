@@ -32,15 +32,45 @@ _PRINT_FIX_CSS = """
 """
 
 
-def _find_chrome() -> str:
-    """Find Chrome binary on the system."""
+def _find_chrome() -> str | None:
+    """Find Chrome binary on the system, or None if not available."""
     for name in ("google-chrome-stable", "google-chrome", "chromium-browser", "chromium"):
         path = shutil.which(name)
         if path:
             return path
-    raise FileNotFoundError(
-        "No Chrome/Chromium binary found. Install google-chrome-stable or chromium."
-    )
+    return None
+
+
+def _ensure_playwright_browsers():
+    """Install Playwright Chromium + system deps if not already present."""
+    cache = Path.home() / ".cache" / "ms-playwright"
+    if not any(cache.glob("chromium*")) if cache.exists() else True:
+        subprocess.run(
+            ["playwright", "install", "--with-deps", "chromium"],
+            check=True, capture_output=True,
+        )
+
+
+def _render_slide_pdf_playwright(
+    html: str, pdf_path: Path, width: int, height: int
+) -> Path:
+    """Render a single slide HTML to PDF using Playwright (sync API)."""
+    from playwright.sync_api import sync_playwright
+
+    with sync_playwright() as pw:
+        browser = pw.chromium.launch(headless=True)
+        page = browser.new_page(viewport={"width": width, "height": height})
+        page.set_content(html, wait_until="networkidle")
+        page.evaluate("() => document.fonts.ready")
+        page.pdf(
+            path=str(pdf_path),
+            width=f"{width}px",
+            height=f"{height}px",
+            print_background=True,
+            margin={"top": "0", "right": "0", "bottom": "0", "left": "0"},
+        )
+        browser.close()
+    return pdf_path
 
 
 def _inject_print_css(html: str) -> str:
@@ -114,21 +144,27 @@ def export_pdf_sync(
     output_path.parent.mkdir(parents=True, exist_ok=True)
 
     chrome = _find_chrome()
+    use_playwright = chrome is None
+    if use_playwright:
+        _ensure_playwright_browsers()
 
     with tempfile.TemporaryDirectory() as tmpdir:
         tmpdir = Path(tmpdir)
         pdf_paths = []
 
         for i, html in enumerate(slides):
-            # Inject print fixes and page size
             html = _inject_page_size(html, width, height)
             html = _inject_print_css(html)
 
-            html_path = tmpdir / f"slide-{i:02d}.html"
-            html_path.write_text(html, encoding="utf-8")
-
             pdf_path = tmpdir / f"slide-{i:02d}.pdf"
-            _render_slide_pdf(chrome, html_path, pdf_path)
+
+            if use_playwright:
+                _render_slide_pdf_playwright(html, pdf_path, width, height)
+            else:
+                html_path = tmpdir / f"slide-{i:02d}.html"
+                html_path.write_text(html, encoding="utf-8")
+                _render_slide_pdf(chrome, html_path, pdf_path)
+
             pdf_paths.append(pdf_path)
 
         # Merge all single-page PDFs
@@ -176,8 +212,8 @@ class ExportEngine:
         if self._browser is None:
             from playwright.async_api import async_playwright
             self._pw = await async_playwright().start()
-            chrome_path = _find_chrome()
             launch_kwargs = {"headless": True}
+            chrome_path = _find_chrome()
             if chrome_path:
                 launch_kwargs["executable_path"] = chrome_path
             self._browser = await self._pw.chromium.launch(**launch_kwargs)
