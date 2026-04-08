@@ -41,7 +41,6 @@ def generate_deck(
     audience: str = "vc",
     slides_to_regenerate: list[int] | None = None,
     previous_deck_id: str | None = None,
-    format: str = "all",
     audit: bool = False,
     publish: bool = False,
     output_dir: str | None = None,
@@ -64,7 +63,6 @@ def generate_deck(
         audience: "vc" | "angel" | "ff" | "customer"
         slides_to_regenerate: list of 0-based slide indices to redo (for iteration)
         previous_deck_id: deck ID to iterate on
-        format: "html" | "pdf" | "pptx" | "all"
         audit: run Gemini visual audit
         publish: upload to aired.sh
         output_dir: where to save files (defaults to ~/.openslides/output/)
@@ -147,20 +145,12 @@ def generate_deck(
     result.deck_id = deck_id
     print(f"Saved as deck {deck_id}", file=sys.stderr)
 
-    # --- Step 7: Export ---
-    if format in ("pdf", "all"):
-        print("Exporting PDF...", file=sys.stderr)
-        from .export import export_pdf_sync
-        pdf_path = output_dir / "deck.pdf"
-        export_pdf_sync(html_slides, pdf_path)
-        result.pdf_path = str(pdf_path)
-
-    if format in ("pptx", "all"):
-        print("Exporting PPTX...", file=sys.stderr)
-        from .export import export_pptx
-        pptx_path = output_dir / "deck.pptx"
-        export_pptx(html_slides, pptx_path)
-        result.pptx_path = str(pptx_path)
+    # --- Step 7: Export PDF ---
+    print("Exporting PDF...", file=sys.stderr)
+    from .export import export_pdf_sync
+    pdf_path = output_dir / "deck.pdf"
+    export_pdf_sync(html_slides, pdf_path)
+    result.pdf_path = str(pdf_path)
 
     # --- Step 8: Audit ---
     if audit:
@@ -187,8 +177,6 @@ def generate_deck(
     print(f"\nDeck generated: {len(html_slides)} slides", file=sys.stderr)
     if result.pdf_path:
         print(f"  PDF: {result.pdf_path}", file=sys.stderr)
-    if result.pptx_path:
-        print(f"  PPTX: {result.pptx_path}", file=sys.stderr)
     if result.aired_url:
         print(f"  URL: {result.aired_url}", file=sys.stderr)
     if result.warnings:
@@ -210,7 +198,6 @@ def cli():
     parser.add_argument("--recipient", help="Recipient name for personalization")
     parser.add_argument("--type", default="pitch", choices=["pitch", "sales", "update", "general"])
     parser.add_argument("--audience", default="vc", choices=["vc", "angel", "ff", "customer"])
-    parser.add_argument("--format", default="all", choices=["html", "pdf", "pptx", "all"])
     parser.add_argument("--audit", action="store_true", help="Run Gemini visual audit")
     parser.add_argument("--publish", action="store_true", help="Publish to aired.sh")
     parser.add_argument("--output", help="Output directory")
@@ -232,7 +219,6 @@ def cli():
         audience=args.audience,
         slides_to_regenerate=slides_to_regen,
         previous_deck_id=args.iterate,
-        format=args.format,
         audit=args.audit,
         publish=args.publish,
         output_dir=args.output,
