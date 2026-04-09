@@ -1942,7 +1942,7 @@ class SlideRenderer:
     }}
     .verified {{
       font-size: 12px;
-      color: #059669;
+      color: {theme.accent};
       background: #ecfdf5;
       padding: 4px 10px;
       border-radius: 4px;
@@ -5706,7 +5706,7 @@ class SlideRenderer:
     .label {{
       display: inline-block;
       background: #ecfdf5;
-      color: #059669;
+      color: {theme.accent};
       padding: 8px 16px;
       border-radius: 6px;
       font-size: 12px;
@@ -6712,13 +6712,13 @@ class SlideRenderer:
       bottom: 0;
       left: 0;
       right: 0;
-      background: linear-gradient(180deg, #10b981 0%, #059669 100%);
+      background: linear-gradient(180deg, {theme.accent_secondary} 0%, {theme.accent} 100%);
       border-radius: 6px;
     }}
     .inv-pct {{
       font-size: 28px;
       font-weight: 800;
-      color: #10b981;
+      color: {theme.accent_secondary};
     }}
     .inv-label {{
       font-size: 14px;
@@ -7221,7 +7221,7 @@ class SlideRenderer:
   <style>
     * {{ margin: 0; padding: 0; box-sizing: border-box; }}
     body {{ font-family: {theme.body_font_family}; background: {theme.background}; color: {theme.text_primary}; width: 1920px; height: 1080px; padding: 80px 100px; }}
-    .label {{ display: inline-block; background: #ecfdf5; color: #059669; padding: 8px 16px; border-radius: 6px; font-size: 12px; font-weight: 600; text-transform: uppercase; margin-bottom: 32px; }}
+    .label {{ display: inline-block; background: #ecfdf5; color: {theme.accent}; padding: 8px 16px; border-radius: 6px; font-size: 12px; font-weight: 600; text-transform: uppercase; margin-bottom: 32px; }}
     .headline {{ font-size: 48px; font-weight: 800; margin-bottom: 50px; }}
     .tiers {{ display: flex; gap: 28px; }}
     .tier {{ flex: 1; padding: 40px; border-radius: 16px; background: {theme.surface}; border: 2px solid {theme.border}; display: flex; flex-direction: column; }}
@@ -7543,7 +7543,7 @@ class SlideRenderer:
       font-size: 14px;
       font-weight: 600;
     }}
-    .metric-change.up {{ color: #059669; }}
+    .metric-change.up {{ color: {theme.accent}; }}
     .metric-change.down {{ color: #dc2626; }}
     .right-section {{
       flex: 1;
@@ -7562,7 +7562,7 @@ class SlideRenderer:
       border-left: 4px solid #d1d9e6;
     }}
     .phase.complete {{
-      border-left-color: #059669;
+      border-left-color: {theme.accent};
       background: #f0fdf4;
     }}
     .phase.active {{
@@ -7581,7 +7581,7 @@ class SlideRenderer:
       font-weight: 700;
       font-size: 14px;
     }}
-    .phase.complete .phase-num {{ background: #059669; }}
+    .phase.complete .phase-num {{ background: {theme.accent}; }}
     .phase.active .phase-num {{ background: #4a90d9; }}
     .phase-info {{ flex: 1; }}
     .phase-date {{
@@ -7598,7 +7598,7 @@ class SlideRenderer:
       font-size: 18px;
       color: #1a2744;
     }}
-    .phase.complete .phase-status {{ color: #059669; }}
+    .phase.complete .phase-status {{ color: {theme.accent}; }}
     .phase.active .phase-status {{ color: #4a90d9; }}
   </style>
 </head>

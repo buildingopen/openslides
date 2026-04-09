@@ -26,14 +26,14 @@ class Theme:
     text_primary: str = "#161512"
     text_secondary: str = "#5A5850"
     text_muted: str = "#A09D94"
-    accent: str = "#059669"
-    accent_secondary: str = "#34d399"
+    accent: str = "#2563eb"
+    accent_secondary: str = "#60a5fa"
     border: str = "#ECEAE4"
     border_light: str = "#F0EDE7"
 
     # Gradients
-    gradient_primary: str = "linear-gradient(135deg, #059669, #34d399)"
-    gradient_text: str = "linear-gradient(135deg, #059669, #34d399)"
+    gradient_primary: str = "linear-gradient(135deg, #2563eb, #60a5fa)"
+    gradient_text: str = "linear-gradient(135deg, #2563eb, #60a5fa)"
 
     # Typography - families
     headline_font_family: str = "'DM Serif Display', serif"
@@ -193,13 +193,13 @@ class Theme:
         if hasattr(brand_context, "colors"):
             colors = brand_context.colors or {}
             fonts = brand_context.fonts or {}
-            primary = colors.get("accent") or colors.get("primary") or "#059669"
+            primary = colors.get("accent") or colors.get("primary") or "#2563eb"
             accent_val = colors.get("accent_secondary")
             mode = "light"
             headline_font = fonts.get("headline_family")
             body_font = fonts.get("body_family")
         else:
-            primary = brand_context.get("primary", "#059669")
+            primary = brand_context.get("primary", "#2563eb")
             accent_val = brand_context.get("accent")
             mode = brand_context.get("mode", "light")
             headline_font = brand_context.get("headline_font")
@@ -257,8 +257,8 @@ class Theme:
                 kwargs[field_name] = colors[spec_key]
 
         # Derive gradients from accent colors
-        accent = colors.get("accent", "#059669")
-        accent_sec = colors.get("accent_secondary", "#34d399")
+        accent = colors.get("accent", "#2563eb")
+        accent_sec = colors.get("accent_secondary", "#60a5fa")
         kwargs.setdefault("gradient_primary", f"linear-gradient(135deg, {accent}, {accent_sec})")
         kwargs.setdefault("gradient_text", f"linear-gradient(135deg, {accent}, {accent_sec})")
 
@@ -325,12 +325,12 @@ class DarkTheme(Theme):
             text_primary="#FFFFFF",
             text_secondary="#A0A0A0",
             text_muted="#666666",
-            accent="#059669",
-            accent_secondary="#34d399",
+            accent="#2563eb",
+            accent_secondary="#60a5fa",
             border="#2A2A2A",
             border_light="#222222",
-            gradient_primary="linear-gradient(135deg, #059669, #34d399)",
-            gradient_text="linear-gradient(135deg, #059669, #34d399)",
+            gradient_primary="linear-gradient(135deg, #2563eb, #60a5fa)",
+            gradient_text="linear-gradient(135deg, #2563eb, #60a5fa)",
         )
         defaults.update(overrides)
         super().__init__(**defaults)
@@ -345,12 +345,12 @@ class LightTheme(Theme):
             text_primary="#161512",
             text_secondary="#5A5850",
             text_muted="#A09D94",
-            accent="#059669",
-            accent_secondary="#34d399",
+            accent="#2563eb",
+            accent_secondary="#60a5fa",
             border="#ECEAE4",
             border_light="#F0EDE7",
-            gradient_primary="linear-gradient(135deg, #059669, #34d399)",
-            gradient_text="linear-gradient(135deg, #059669, #34d399)",
+            gradient_primary="linear-gradient(135deg, #2563eb, #60a5fa)",
+            gradient_text="linear-gradient(135deg, #2563eb, #60a5fa)",
         )
         defaults.update(overrides)
         super().__init__(**defaults)
