@@ -1,0 +1,163 @@
+{
+  "name": "OpenSlides",
+  "description": "AI pitch deck generator. Point it at a prompt (and optionally a company URL) and get a branded pitch deck back as HTML slides plus a base64-encoded PDF.",
+  "manifest_version": "2.0",
+  "runtime": "python",
+  "python_dependencies": [
+    "google-genai==1.9.0",
+    "httpx==0.28.1",
+    "Pillow==11.1.0",
+    "PyPDF2==3.0.1",
+    "python-pptx==1.0.2",
+    "colorthief==0.2.1"
+  ],
+  "secrets_needed": [
+    "GEMINI_API_KEY"
+  ],
+  "actions": {
+    "generate": {
+      "label": "Generate Deck",
+      "description": "Generate a branded pitch deck from a prompt and optional company URL. Scrapes brand colors, fonts, and logo from the URL. Returns slide HTML and (when PDF export is available) a base64-encoded PDF.",
+      "inputs": [
+        {
+          "name": "prompt",
+          "label": "Prompt",
+          "type": "textarea",
+          "required": true,
+          "description": "What the deck is about. Include company, stage, ask, and audience.",
+          "placeholder": "Floom is the production layer for AI scripts. Raising $200K F&F at $8M cap."
+        },
+        {
+          "name": "company_url",
+          "label": "Company URL",
+          "type": "url",
+          "required": false,
+          "description": "Optional company website. If set, brand colors, fonts, and logo are scraped from it.",
+          "placeholder": "https://floom.dev"
+        },
+        {
+          "name": "audience",
+          "label": "Audience",
+          "type": "text",
+          "required": false,
+          "default": "vc",
+          "description": "Target audience: vc, angel, ff, or customer."
+        },
+        {
+          "name": "deck_type",
+          "label": "Deck Type",
+          "type": "text",
+          "required": false,
+          "default": "pitch",
+          "description": "Type of deck: pitch, sales, update, or general."
+        }
+      ],
+      "outputs": [
+        {
+          "name": "deck_id",
+          "label": "Deck ID",
+          "type": "text"
+        },
+        {
+          "name": "slide_count",
+          "label": "Slide Count",
+          "type": "number"
+        },
+        {
+          "name": "slides",
+          "label": "Slide HTML",
+          "type": "json"
+        },
+        {
+          "name": "pdf_base64",
+          "label": "PDF (base64)",
+          "type": "text"
+        },
+        {
+          "name": "pdf_size_bytes",
+          "label": "PDF Size (bytes)",
+          "type": "number"
+        }
+      ]
+    },
+    "iterate": {
+      "label": "Iterate Slides",
+      "description": "Regenerate specific slides of a previously generated deck while keeping the rest. Returns the updated deck.",
+      "inputs": [
+        {
+          "name": "deck_id",
+          "label": "Previous Deck ID",
+          "type": "text",
+          "required": true,
+          "description": "ID of the deck to iterate on."
+        },
+        {
+          "name": "prompt",
+          "label": "Refinement",
+          "type": "textarea",
+          "required": true,
+          "description": "What to change or improve on the selected slides."
+        },
+        {
+          "name": "slide_indices",
+          "label": "Slide Indices (JSON array)",
+          "type": "json",
+          "required": true,
+          "description": "0-based indices of slides to regenerate, e.g. [2, 4, 5]."
+        }
+      ],
+      "outputs": [
+        {
+          "name": "deck_id",
+          "label": "Deck ID",
+          "type": "text"
+        },
+        {
+          "name": "slide_count",
+          "label": "Slide Count",
+          "type": "number"
+        },
+        {
+          "name": "pdf_base64",
+          "label": "PDF (base64)",
+          "type": "text"
+        },
+        {
+          "name": "pdf_size_bytes",
+          "label": "PDF Size (bytes)",
+          "type": "number"
+        }
+      ]
+    },
+    "resolve_logo": {
+      "label": "Resolve Logo",
+      "description": "Find the best logo URL for a company name or domain. Uses Simple Icons, svgl, and favicon fallbacks.",
+      "inputs": [
+        {
+          "name": "name",
+          "label": "Company or Domain",
+          "type": "text",
+          "required": true,
+          "placeholder": "stripe.com"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "url",
+          "label": "Logo URL",
+          "type": "text"
+        },
+        {
+          "name": "format",
+          "label": "Format",
+          "type": "text"
+        },
+        {
+          "name": "provider",
+          "label": "Provider",
+          "type": "text"
+        }
+      ]
+    }
+  }
+}
