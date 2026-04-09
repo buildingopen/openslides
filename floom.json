@@ -101,9 +101,10 @@
         {
           "name": "slide_indices",
           "label": "Slide Indices (JSON array)",
-          "type": "json",
+          "type": "textarea",
           "required": true,
-          "description": "0-based indices of slides to regenerate, e.g. [2, 4, 5]."
+          "description": "0-based indices of slides to regenerate as a JSON array, e.g. [2, 4, 5].",
+          "placeholder": "[0, 2, 4]"
         }
       ],
       "outputs": [

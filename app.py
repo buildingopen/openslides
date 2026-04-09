@@ -13,6 +13,7 @@ the runtime JSON protocol.
 """
 
 import base64
+import json
 from pathlib import Path
 
 from floom import app, context
@@ -76,8 +77,20 @@ def generate(
 
 
 @app.action
-def iterate(deck_id: str, prompt: str, slide_indices: list) -> dict:
-    """Regenerate specific slides from a previous deck."""
+def iterate(deck_id: str, prompt: str, slide_indices) -> dict:
+    """Regenerate specific slides from a previous deck.
+
+    `slide_indices` may be either a Python list of ints or a JSON-encoded
+    string (e.g. from a textarea input like "[0, 2, 4]").
+    """
+    if isinstance(slide_indices, str):
+        try:
+            slide_indices = json.loads(slide_indices)
+        except json.JSONDecodeError:
+            return {"error": "slide_indices must be a JSON array of integers"}
+    if not isinstance(slide_indices, list):
+        return {"error": "slide_indices must be a list"}
+
     result = generate_deck(
         prompt=prompt,
         previous_deck_id=deck_id,
