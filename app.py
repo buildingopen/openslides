@@ -60,7 +60,27 @@ def generate(
         api_key=context.get_secret("GEMINI_API_KEY"),
     )
 
+    # Build a single HTML preview document from all slides
+    preview_parts = [
+        "<!DOCTYPE html><html><head><meta charset='utf-8'>",
+        "<style>",
+        "body { margin: 0; padding: 20px; background: #f5f5f5; font-family: sans-serif; }",
+        ".slide { background: #fff; padding: 40px; margin: 0 auto 24px; max-width: 960px; ",
+        "  border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }",
+        ".slide iframe { width: 100%; height: 600px; border: none; }",
+        ".slide-divider { border: none; border-top: 1px solid #e0e0e0; margin: 0; }",
+        "</style></head><body>",
+    ]
+    for i, slide_html in enumerate(result.html_slides):
+        if i > 0:
+            preview_parts.append('<hr class="slide-divider">')
+        # Each slide is a full HTML doc; embed via srcdoc iframe for isolation
+        escaped = slide_html.replace("&", "&amp;").replace('"', "&quot;")
+        preview_parts.append(f'<div class="slide"><iframe srcdoc="{escaped}"></iframe></div>')
+    preview_parts.append("</body></html>")
+
     output = {
+        "preview": "\n".join(preview_parts),
         "deck_id": result.deck_id,
         "slide_count": len(result.html_slides),
         "slides": result.html_slides,

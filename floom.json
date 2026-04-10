@@ -54,9 +54,9 @@
       ],
       "outputs": [
         {
-          "name": "deck_id",
-          "label": "Deck ID",
-          "type": "text"
+          "name": "preview",
+          "label": "Slide Deck Preview",
+          "type": "html"
         },
         {
           "name": "slide_count",
@@ -65,8 +65,13 @@
         },
         {
           "name": "slides",
-          "label": "Slide HTML",
+          "label": "Raw Slide Data",
           "type": "json"
+        },
+        {
+          "name": "deck_id",
+          "label": "Deck ID",
+          "type": "text"
         },
         {
           "name": "pdf_base64",
